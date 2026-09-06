@@ -109,6 +109,10 @@ const buildTree = (objects: Array<{ key: string; size?: number; uploaded?: Date 
     }
 
     const name = parts[parts.length - 1];
+    if (obj.key.endsWith('/')) {
+      ensureFolder(folder, name);
+      continue;
+    }
     const lastModifiedMs = obj.uploaded ? obj.uploaded.getTime() : Date.now();
     const node: InternalNode = {
       kind: "file",

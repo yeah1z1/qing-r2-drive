@@ -51,7 +51,7 @@ export default function Navbar() {
               <span className="text-sm font-medium">关于页面</span>
             </a>
             <a
-              href="https://r2admin.qinghub.top/"
+              href="/admin"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -138,7 +138,7 @@ export default function Navbar() {
               关于页面
             </a>
             <a
-              href="https://r2admin.qinghub.top/"
+              href="/admin"
               target="_blank" rel="noopener noreferrer"
               className="border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 hover:text-gray-700 flex items-center gap-3 pl-3 pr-4 py-2 border-l-4 text-base font-medium"
               onClick={() => setIsMobileMenuOpen(false)}
