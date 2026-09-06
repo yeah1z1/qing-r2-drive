@@ -5,7 +5,27 @@ import Link from 'next/link';
 type Entry = { key: string; size?: number; folder: boolean };
 type Auth = { user: string; password: string };
 const CHUNK = 8 * 1024 * 1024;
-const style = 'rounded-lg border px-3 py-2 bg-white text-gray-800 disabled:opacity-40';
+// Match the original drive's blue primary buttons and outlined secondary actions.
+const baseButton = 'inline-flex items-center justify-center gap-1.5 min-h-10 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-95';
+const style = baseButton + ' bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 hover:shadow-sm';
+const primary = baseButton + ' bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500 shadow-sm hover:shadow-md border border-transparent';
+const danger = baseButton + ' border border-red-200 dark:border-red-900/50 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300';
+const inputStyle = 'w-full mt-2 px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors';
+const iconPaths = {
+  upload: 'M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4',
+  folder: 'M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3V7Z',
+  rename: 'm15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z',
+  move: 'M3 7h7l2 2h9v11H3V7Zm11 6 3 3-3 3m-5-3h8',
+  trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
+  refresh: 'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2',
+  home: 'm3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8',
+  lock: 'M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5V10Zm7 4v3',
+  exit: 'M9 4H4v16h5m6-13 5 5-5 5m-6-5h11',
+  file: 'M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 12h8m-8 4h6',
+};
+function Icon({ name, className = '' }: { name: keyof typeof iconPaths; className?: string }) {
+  return <svg aria-hidden="true" className={'h-4 w-4 shrink-0 ' + className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={iconPaths[name]} /></svg>;
+}
 const size = (n = 0) => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
 export default function AdminPage() {
   const [auth, setAuth] = useState<Auth | null>(null);
@@ -125,43 +145,45 @@ export default function AdminPage() {
     await load();
     setNotice(`上传完成：成功 ${done}/${files.length}${failed.length ? '\n' + failed.join('\n') : ''}`);
   }
-  return <main className="max-w-6xl mx-auto p-4 text-gray-900 dark:text-gray-100">
-    <div className="flex flex-wrap justify-between gap-3 items-center my-4">
-      <h1 className="text-2xl font-bold">Mikoo&apos;s R2 Admin</h1>
-      <div className="flex gap-2"><Link className={style} href="/">返回网盘</Link>{auth && <button className={style} disabled={busy} onClick={() => { setAuth(null); setEntries([]); setSelected([]); setNotice('已退出'); }}>退出登录</button>}</div>
+  return <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-gray-900 dark:text-gray-100">
+    <div className="flex flex-wrap justify-between gap-4 items-center mb-4">
+      <div><h1 className="text-xl sm:text-2xl font-bold tracking-tight">文件管理</h1><p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Mikoo&apos;s R2 Admin</p></div>
+      <div className="flex gap-2"><Link className={style} href="/"><Icon name="home" />返回网盘</Link>{auth && <button className={style} disabled={busy} onClick={() => { setAuth(null); setEntries([]); setSelected([]); setNotice('已退出'); }}><Icon name="exit" />退出登录</button>}</div>
     </div>
-    <p className="text-sm text-gray-500 mb-4">管理现有 R2 桶。这里上传的文件仍可在公开网盘访问。请勿多人同时修改同一文件。</p>
-    {notice && <div role="status" className="whitespace-pre-wrap break-words rounded-lg bg-blue-50 text-blue-900 border p-3 mb-4">{notice}</div>}
-    {!auth ? <form className="max-w-sm space-y-4 border rounded-xl p-5" onSubmit={e => { e.preventDefault(); void run(login); }}>
-      <h2 className="font-semibold">管理员登录</h2>
-      <label className="block">账号<input autoComplete="username" className={style + ' w-full mt-1'} value={user} onChange={e => setUser(e.target.value)} required /></label>
-      <label className="block">密码<input autoComplete="current-password" type="password" className={style + ' w-full mt-1'} value={password} onChange={e => setPassword(e.target.value)} required /></label>
-      <button disabled={busy} className={style + ' w-full'}>{busy ? '验证中…' : '登录'}</button>
-      <p className="text-xs text-gray-500">使用你网盘的管理员账号和密码。刷新页面后需重新登录，不写入本地存储。</p>
+    <p className="text-xs sm:text-sm leading-relaxed text-gray-500 dark:text-gray-400 mb-6">管理现有 R2 桶。这里上传的文件仍可在公开网盘访问。请勿多人同时修改同一文件。</p>
+    {notice && <div role="status" className="whitespace-pre-wrap break-words rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-800/50 px-4 py-3 mb-5 text-sm leading-relaxed">{notice}</div>}
+    {!auth ? <form className="max-w-md mx-auto my-8 sm:my-12 space-y-5 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-sm" onSubmit={e => { e.preventDefault(); void run(login); }}>
+      <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center"><Icon name="lock" className="!h-6 !w-6" /></div>
+      <div><h2 className="text-xl font-semibold">管理员登录</h2><p className="text-sm text-gray-500 dark:text-gray-400 mt-2">登录后管理你的文件与目录</p></div>
+      <label className="block text-sm font-medium">账号<input autoComplete="username" className={inputStyle} value={user} onChange={e => setUser(e.target.value)} required /></label>
+      <label className="block text-sm font-medium">密码<input autoComplete="current-password" type="password" className={inputStyle} value={password} onChange={e => setPassword(e.target.value)} required /></label>
+      <button disabled={busy} className={primary + ' w-full !min-h-11'}><Icon name="lock" />{busy ? '验证中…' : '登录'}</button>
+      <p className="text-xs leading-relaxed text-gray-400 dark:text-gray-500">使用你网盘的管理员账号和密码。刷新页面后需重新登录，不写入本地存储。</p>
     </form> : <>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <label className={style + (busy ? ' opacity-40' : ' cursor-pointer')}>上传文件<input className="hidden" type="file" multiple disabled={busy} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) void run(() => upload(files)); }} /></label>
-        <button className={style} disabled={busy} onClick={() => void run(() => action('mkdir'))}>新建目录</button>
-        <button className={style} disabled={busy || selected.length !== 1} onClick={() => void run(() => action('rename'))}>重命名</button>
-        <button className={style} disabled={busy || !selected.length} onClick={() => void run(() => action('move'))}>移动 ({selected.length})</button>
-        <button className={style + ' text-red-600'} disabled={busy || !selected.length} onClick={() => void run(() => action('delete'))}>删除 ({selected.length})</button>
-        <button className={style} disabled={busy} onClick={() => void run(() => load())}>刷新</button>
+      <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 mb-5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 shadow-sm">
+        <label className={primary + ' relative focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-offset-2' + (busy ? ' opacity-40 pointer-events-none' : ' cursor-pointer')}><Icon name="upload" />上传文件<input aria-label="上传文件" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" type="file" multiple disabled={busy} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; if (files.length) void run(() => upload(files)); }} /></label>
+        <button className={style} disabled={busy} onClick={() => void run(() => action('mkdir'))}><Icon name="folder" />新建目录</button>
+        <button className={style} disabled={busy || selected.length !== 1} onClick={() => void run(() => action('rename'))}><Icon name="rename" />重命名</button>
+        <button className={style} disabled={busy || !selected.length} onClick={() => void run(() => action('move'))}><Icon name="move" />移动{selected.length > 0 && <span className="text-xs">{selected.length}</span>}</button>
+        <button className={danger} disabled={busy || !selected.length} onClick={() => void run(() => action('delete'))}><Icon name="trash" />删除{selected.length > 0 && <span className="text-xs">{selected.length}</span>}</button>
+        <button className={style + ' sm:ml-auto'} disabled={busy} onClick={() => void run(() => load())}><Icon name="refresh" className={busy ? 'animate-spin' : ''} />刷新</button>
       </div>
-      <div className="flex flex-wrap items-center gap-2 mb-3 break-all">
-        <button disabled={busy} className="text-blue-600 underline" onClick={() => void run(() => load(''))}>根目录</button>
-        {prefix.split('/').filter(Boolean).map((part, i, all) => <span key={i}> / <button disabled={busy} className="text-blue-600 underline" onClick={() => void run(() => load(all.slice(0, i + 1).join('/') + '/'))}>{part}</button></span>)}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3 break-all">
+        <button disabled={busy} className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" onClick={() => void run(() => load(''))}>根目录</button>
+        {prefix.split('/').filter(Boolean).map((part, i, all) => <span key={i} className="flex items-center gap-1.5"> <span className="text-gray-300 dark:text-gray-600">/</span> <button disabled={busy} className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-md px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" onClick={() => void run(() => load(all.slice(0, i + 1).join('/') + '/'))}>{part}</button></span>)}
       </div>
-      <div className="border rounded-xl overflow-hidden">
-        <div className="flex gap-3 p-3 border-b bg-gray-50 text-gray-700"><input type="checkbox" aria-label="选择当前已加载的全部条目" disabled={busy || !entries.length} checked={entries.length > 0 && selected.length === entries.length} onChange={e => setSelected(e.target.checked ? entries.map(v => v.key) : [])} /><span>全选已加载条目 · {entries.length} 项</span></div>
-        {entries.map(entry => <div key={entry.key} className="flex gap-3 items-center border-b last:border-0 p-3">
-          <input type="checkbox" aria-label={'选择 ' + entry.key} disabled={busy} checked={selected.includes(entry.key)} onChange={e => setSelected(old => e.target.checked ? [...old, entry.key] : old.filter(k => k !== entry.key))} />
-          <div className="min-w-0 flex-1">{entry.folder ? <button disabled={busy} className="text-blue-600 text-left break-all" onClick={() => void run(() => load(entry.key))}>📁 {entry.key.slice(prefix.length).replace(/\/$/, '')}</button> : <span className="break-all">📄 {entry.key.slice(prefix.length)}</span>}</div>
-          <span className="shrink-0 text-xs text-gray-500">{entry.folder ? '目录' : size(entry.size)}</span>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+        <div className="flex gap-3 items-center px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-sm text-gray-500 dark:text-gray-400"><input className="h-4 w-4 accent-blue-600 cursor-pointer" type="checkbox" aria-label="选择当前已加载的全部条目" disabled={busy || !entries.length} checked={entries.length > 0 && selected.length === entries.length} onChange={e => setSelected(e.target.checked ? entries.map(v => v.key) : [])} /><span>全选已加载条目 · {entries.length} 项</span></div>
+        {entries.map(entry => <div key={entry.key} className={'flex gap-3 items-center border-b border-gray-100 dark:border-gray-800 last:border-0 px-4 py-4 transition-colors ' + (selected.includes(entry.key) ? 'bg-blue-50/70 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50')}>
+          <input className="h-4 w-4 accent-blue-600 shrink-0 cursor-pointer" type="checkbox" aria-label={'选择 ' + entry.key} disabled={busy} checked={selected.includes(entry.key)} onChange={e => setSelected(old => e.target.checked ? [...old, entry.key] : old.filter(k => k !== entry.key))} />
+          <div className={'h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ' + (entry.folder ? 'bg-amber-50 text-amber-500 dark:bg-amber-900/20' : 'bg-blue-50 text-blue-500 dark:bg-blue-900/20')}><Icon name={entry.folder ? 'folder' : 'file'} className="!w-5 !h-5" /></div>
+          <div className="min-w-0 flex-1 text-sm font-medium">{entry.folder ? <button disabled={busy} className="text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 text-left break-all transition-colors" onClick={() => void run(() => load(entry.key))}>{entry.key.slice(prefix.length).replace(/\/$/, '')}</button> : <span className="break-all">{entry.key.slice(prefix.length)}</span>}</div>
+          <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{entry.folder ? '目录' : size(entry.size)}</span>
         </div>)}
-        {!entries.length && <p className="text-center py-12 text-gray-500">{busy ? '正在加载…' : '当前目录为空'}</p>}
+        {!entries.length && <div className="py-12 px-4 text-center text-sm text-gray-400 dark:text-gray-500">{busy ? '正在加载…' : '当前目录为空'}</div>}
       </div>
-      {cursor && <button className={style + ' mt-3'} disabled={busy} onClick={() => void run(() => load(prefix, cursor))}>加载更多</button>}
-      <p className="mt-4 text-xs text-gray-500">上传支持多选与分片。批量操作每次最多 100 个对象（含目录内容）。移动/重命名单文件上限 500MB、单次总计 1GB；采用先复制校验再删除，非原子操作。关闭页面可能中断操作，遇到错误请刷新检查原文件与副本。</p>
+      {cursor && <div className="flex justify-center mt-4"><button className={style} disabled={busy} onClick={() => void run(() => load(prefix, cursor))}>加载更多</button></div>}
+      <p className="mt-6 text-xs leading-relaxed text-gray-400 dark:text-gray-500">上传支持多选与分片。批量操作每次最多 100 个对象（含目录内容）。移动/重命名单文件上限 500MB、单次总计 1GB；采用先复制校验再删除，非原子操作。关闭页面可能中断操作，遇到错误请刷新检查原文件与副本。</p>
     </>}
   </main>;
 }
