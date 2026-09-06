@@ -1,0 +1,9 @@
+"$schema" = "./node_modules/wrangler/config-schema.json"
+name = "qing-r2-drive"
+compatibility_date = "2026-09-06"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "qing-r2-drive"
