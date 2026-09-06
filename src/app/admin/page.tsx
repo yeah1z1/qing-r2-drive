@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import Link from 'next/link';
 
 type Entry = { key: string; size?: number; folder: boolean };
 type Auth = { user: string; password: string };
@@ -127,7 +128,7 @@ export default function AdminPage() {
   return <main className="max-w-6xl mx-auto p-4 text-gray-900 dark:text-gray-100">
     <div className="flex flex-wrap justify-between gap-3 items-center my-4">
       <h1 className="text-2xl font-bold">Mikoo&apos;s R2 Admin</h1>
-      <div className="flex gap-2"><a className={style} href="/">返回网盘</a>{auth && <button className={style} disabled={busy} onClick={() => { setAuth(null); setEntries([]); setSelected([]); setNotice('已退出'); }}>退出登录</button>}</div>
+      <div className="flex gap-2"><Link className={style} href="/">返回网盘</Link>{auth && <button className={style} disabled={busy} onClick={() => { setAuth(null); setEntries([]); setSelected([]); setNotice('已退出'); }}>退出登录</button>}</div>
     </div>
     <p className="text-sm text-gray-500 mb-4">管理现有 R2 桶。这里上传的文件仍可在公开网盘访问。请勿多人同时修改同一文件。</p>
     {notice && <div role="status" className="whitespace-pre-wrap break-words rounded-lg bg-blue-50 text-blue-900 border p-3 mb-4">{notice}</div>}
