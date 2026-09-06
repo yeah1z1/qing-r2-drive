@@ -11,7 +11,7 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "WanQing's R2 Drive",
+  title: "Mikoo's R2 Drive",
   description: "Personal Cloud Storage powered by Cloudflare R2",
   icons: {
     icon: "/icons/logo.png",

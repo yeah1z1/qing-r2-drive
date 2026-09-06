@@ -23,7 +23,7 @@ export default function Navbar() {
 	                  className="h-11 w-12 shrink-0"
 	                  priority
 	                />
-                <span className="leading-none">WanQing&apos;s R2 Drive</span>
+                <span className="leading-none">Mikoo&apos;s R2 Drive</span>
               </Link>
             </div>
           </div>
