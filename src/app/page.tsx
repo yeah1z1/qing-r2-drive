@@ -181,8 +181,15 @@ const formatDate = (date: string) =>
     day: "2-digit",
   }).format(new Date(date));
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
+const copyToClipboard = async (text: Promise<string>) => {
+  // Start clipboard.write during the click, before awaiting the network (Safari).
+  if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+    const blob = text.then((url) => new Blob([url], { type: "text/plain" }));
+    void blob.catch(() => {});
+    await navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]);
+  } else {
+    await navigator.clipboard.writeText(await text);
+  }
 };
 
 type FlatNode = {
@@ -474,11 +481,18 @@ const Home: React.FC = () => {
     }));
   }, [sortedFiles, path, searchResults]);
 
-  const handleCopy = (key: string, url: string) => {
-    copyToClipboard(url);
-    setCopied(key);
-    setNotice("链接已复制成功 ✅");
-    setTimeout(() => setCopied(null), 2000);
+  const handleCopy = async (key: string, url: Promise<string>) => {
+    try {
+      await copyToClipboard(url);
+      setCopied(key);
+      setNotice("链接已复制成功 ✅");
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      const text = await url;
+      setCopied(null);
+      setNotice("自动复制被浏览器阻止，请手动复制弹窗中的链接");
+      window.prompt("请长按下方链接，选择复制：", text);
+    }
   };
 
   const resolveObjectUrl = async (file: FileItem, download: boolean, opts?: { direct?: boolean }) => {
@@ -908,8 +922,7 @@ const Home: React.FC = () => {
                             }`}
                             onClick={async () => {
                             try {
-                              const url = await resolveObjectUrl(file, true, { direct: true });
-                              handleCopy(file.key || file.name, url);
+                              await handleCopy(file.key || file.name, resolveObjectUrl(file, true, { direct: true }));
                             } catch (e) {
                               const msg = e instanceof Error ? e.message : String(e);
                               setNotice(`获取分享链接失败: ${msg}`);
@@ -1014,8 +1027,7 @@ const Home: React.FC = () => {
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-transparent hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:border-blue-500 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-all duration-200"
                       onClick={async () => {
                       try {
-                        const url = await resolveObjectUrl(preview, true, { direct: true });
-                        handleCopy(preview!.key || preview!.name, url);
+                        await handleCopy(preview.key || preview.name, resolveObjectUrl(preview, true, { direct: true }));
                       } catch (e) {
                         const msg = e instanceof Error ? e.message : String(e);
                         setNotice(`获取分享链接失败: ${msg}`);
